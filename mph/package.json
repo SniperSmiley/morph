@@ -1,0 +1,25 @@
+{
+  "name": "mph",
+  "displayName": "mph",
+  "description": "morphing language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "morph",
+      "aliases": ["Morph", "morph"],
+      "extensions": ["mph"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "morph",
+      "scopeName": "normal",
+      "path": "./syntaxes/morph.tmLanguage.json"
+    }]
+  }
+}

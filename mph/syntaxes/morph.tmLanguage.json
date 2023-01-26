@@ -1,0 +1,71 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Morph",
+	"patterns": [
+        {
+            "include": "#storage"
+        },
+        {
+            "include": "#keywords"
+        },
+		{
+			"include": "#strings"
+		},
+        {
+            "include": "#print"
+        },
+        {
+            "include": "#functions"
+        }
+	],
+	"repository": {
+        "imposible": {
+            "match": "$.^"
+        },
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control",
+				"match": "\\b(if|while|for|return)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.morph",
+			"begin": "\"",
+			"end": "\"", 
+			"patterns": [
+				{
+					"name": "constant.character.escape.morph",
+					"match": "\\\\."
+				}
+			]
+		},
+        "print": {
+            "name": "keyword.control.print",
+            "match": "<<"},
+        "storage": {
+            "name": "storage.type",
+            "match": "\\bL"},
+        "functions": {
+            "name": "meta.function.definition.morph",
+            "begin": "\\b(#)([a-z0-9_]+)(\\()",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.other.morph"
+                },
+                "2": {
+                    "name": "entity.name.function.morph"
+                },
+                "3": {
+                    "name": "punctuation.brackets.round.morph"
+                }
+            },
+            "end": "=",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.morph"
+                }
+            }
+        }
+	},
+	"scopeName": "normal"
+}

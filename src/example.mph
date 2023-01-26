@@ -1,0 +1,13 @@
+#fib(a,b)=b,a+b
+#fib(n)=La=0;Lb=1;*n:a,b=fib(a,b);a
+//#fib(n)=La=0;Lb=1;*n:a,b=b,a+b;b
+#fib()=^n=fib(n)
+
+La=new fib
+<<a
+<<a
+<<a<<a
+Lb=>>"Filename.txt"
+
+#fizzbuzz(n):*1..n:by%3:<<"Fizz"|by%5:<<"Buzz"|:<<n;
+

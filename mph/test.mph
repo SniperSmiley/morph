@@ -1,0 +1,6 @@
+=random=r
+
+r.reseed_on_time()
+
+<<r.random()<<
+<<"Random number: "<<r.random(0, 100)<<
