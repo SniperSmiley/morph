@@ -3,6 +3,9 @@
 	"name": "Morph",
 	"patterns": [
         {
+            "include": "#comment"
+        },
+        {
             "include": "#storage"
         },
         {
@@ -21,6 +24,10 @@
 	"repository": {
         "imposible": {
             "match": "$.^"
+        },
+        "comment": {
+            "name": "comment.line.double-slash.morph",
+            "match": "//.*$"
         },
 		"keywords": {
 			"patterns": [{
@@ -47,7 +54,7 @@
             "match": "\\bL"},
         "functions": {
             "name": "meta.function.definition.morph",
-            "begin": "\\b(#)([a-z0-9_]+)(\\()",
+            "begin": "(#)([a-z0-9_]+)(\\()",
             "beginCaptures": {
                 "1": {
                     "name": "keyword.other.morph"
