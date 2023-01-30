@@ -7,6 +7,7 @@ La=new fib
 <<a
 <<a
 <<a<<a
+<<
 Lb=>>"Filename.txt"
 
 #fizzbuzz(n):*1..n:by%3:<<"Fizz"|by%5:<<"Buzz"|:<<n;
