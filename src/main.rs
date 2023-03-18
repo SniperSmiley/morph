@@ -1,23 +1,55 @@
-//include the Lexer
-use lexer::Lexer;
-// This is the main file for the morph language
 mod collection;
-mod lexer;
-fn main() {
-    /// morph module define syntax changing tools in the morph language
-    let code = collection::read_file("src\\example.mph");
-    let mut lexer = Lexer::new(code);
-    lexer.add_token_type("string".to_string(), r#"^"[^"]*""#.to_string());
-    lexer.add_token_type("number".to_string(), r"^[0-9][0-9_]*".to_string());
-    lexer.add_token_type("identifier".to_string(), r"^[a-zA-Z_][a-zA-Z0-9_]*".to_string());
-    lexer.add_token_type("print".to_string(), r"^<<".to_string());
-    lexer.add_token_type("whitespace".to_string(), r"^\s+".to_string());
-    lexer.lex();
-    for i in lexer.pending{
-        println!("{}: {} {}", i.name, i.length, i.value);
+
+struct ParserExpressionGrammer {
+
+}
+
+impl ParserExpressionGrammer {
+    pub fn new() -> ParserExpressionGrammer {
+        return ParserExpressionGrammer {
+
+        };
     }
-    /// syntax update module updates the syntax
-    /// parser module takes the tokens and parses them into a tree
-    /// interpreter module takes the tree and interprets it
-    return ();
+}
+
+struct Interpreter {
+    parser: ParserExpressionGrammer,
+    functions: Vec<Function>,
+}
+impl Interpreter {
+    pub fn new(parser: ParserExpressionGrammer) -> Interpreter {
+        return Interpreter {
+            parser: parser,
+            functions: Vec::new(),
+        };
+    }
+    pub fn add_function(&mut self, name: &str, function: Function) -> {
+        self.functions.push(function);
+    }
+    pub fn run(&mut self, code: String) {
+        return ();
+    }
+}
+
+struct ASTNode {
+    name: String,
+    value: String,
+    children: Vec<ASTNode>,
+}
+
+fn main() {
+    let code = collection::read_file("src\\example.mph");
+    // create a mutatable core parser that can start parsing the code
+    let mut coreParser = ParserExpressionGrammer::new();
+    //coreParser.extend("extend: 'extend' IDENTIFIER? '{' (STRING,)* '}'");
+    // 
+    // add a function to the interpreter
+    let mut interpreter = Interpreter::new(coreParser);
+    interpreter.add_function("print", |args| {
+        println!("{}", args[0]);
+        return Value::Null;
+    });
+    // run the interpreter
+    interpreter.run(code);
+
 }

@@ -1,0 +1,6 @@
+PEG print{
+    "print:'<<' x=expression {print(x)}",
+    "endl: print* '<<' '\n' {print('\n')}"
+}
+
+<< "Hello World!" <<
