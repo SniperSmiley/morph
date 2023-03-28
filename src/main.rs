@@ -37,41 +37,56 @@ fn Opt(options:Vec<SxN>) -> SxN{
 fn Rep(options:Vec<SxN>) -> SxN{
     SxN{name:"".to_string(),syntax:Syntax::Repeat,options}
 }
+fn ll(grammar:Vec<SxN>,node:SxN,code:String) -> bool{
+    for node in node.options {
+
+    }
+}
 fn first_do_the_thing(grammar:Vec<SxN>,code:String){   
     // starting with the first RHS in the grammar go through each option
     let current = 0;
     for option in grammar[0].options {
-        let name = option.name.clone();
-        let syntax = option.syntax.clone();
-        let options = option.options.clone();
-        let test= current.clone();
-        if options.len() == 0{
-            if Syntax::LeftHandSide == syntax {
+        let test = current.clone();
+        if option.options.len() == 0{
+            if Syntax::LeftHandSide == option.syntax {
                 // go into grammar and find the RHS with the name
                 for rhs in grammar {
-                    if rhs.name == name {
+                    if rhs.name == option.name {
                         // call a function that will go through the RHS to see if there is a matching Def
                     }
                 }
             }
             // if the option is a keyword then check if the code contians the keyword
             else if Syntax::Keyword == option.syntax {
-                let name = option.name.clone();
-                if code.len() > test + name.len() && code[test..test+name.len()] == name {
+                if (code.len() > test + option.name.len()) && code[test..test+option.name.len()] == option.name {
                     // if the keyword is found then move the current position to the end of the keyword
-                    test += name.len();
+                    test += option.name.len();
                 } else {
                     // if the keyword is not found then the code does not match the grammar
-                    return false;
+                    return ();
                 }
             } else {
 
             }
         }
-        do_the_thing(option,0,code);
     }
 }
+struct AST{
+    root: ASTNode,
+}
+struct ASTNode{
+    node_type: String,
+    span: (usize,usize),
+    children: Vec<ASTNode>,
+}
 // create a function that takes a grammar and some code and returns a AST
+fn grammar_to_AST(grammar:Vec<SxN>,code:String) -> AST{
+    // create a AST
+    let AST = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
+    // go through the grammar and create a AST
+
+    // return the AST
+}
 // create a function that takes a RHS and the current position in the code and checks if the code matches a Def in the RHS
 // create a function that goes through a Def and checks if the code matches staring at the current position in the code and if it does updates the AST and returns the new cursor position
 
