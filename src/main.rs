@@ -1,13 +1,14 @@
 mod collection;
 #[derive(PartialEq)]
 enum Syntax {
-    RightHandSide,
-    LeftHandSide,
-    Definition,
-    Keyword,
-    Argument,
-    Option,
-    Repeat,
+    RightHandSide, // a RHS is a vector of options that can be refferenced from an LHS
+    LeftHandSide,  // a LHS is a name that can be resolved to a RHS
+    Definition,    // a Def is a vector of options that must be matched in order
+    Keyword,       // a Key is a string that must match the code exactly
+    Repeat,        // a Rep is a argument that is used zero or more times aka * in regex
+    Argument,      // a Arg is a argument that is used once or more times aka + in regex
+    Option,        // a Opt is a argument that is used once or not at all aka ? in regex
+    Choice,        // a Cho is a vector of options where only one must be matched
     Group,
 }
 struct SxN{
@@ -37,20 +38,41 @@ fn Opt(options:Vec<SxN>) -> SxN{
 fn Rep(options:Vec<SxN>) -> SxN{
     SxN{name:"".to_string(),syntax:Syntax::Repeat,options}
 }
-fn ll(grammar:Vec<SxN>,node:SxN,code:String) -> bool{
-    for node in node.options {
-
+fn Grp(options:Vec<SxN>) -> SxN{
+    SxN{name:"".to_string(),syntax:Syntax::Group,options}
+}
+fn Cho(options:Vec<SxN>) -> SxN{
+    SxN{name:"".to_string(),syntax:Syntax::Choice,options}
+}
+fn ll(grammar:&Vec<SxN>,definition:&Vec<SxN>,code:String,current:usize,ast_node:ASTNode) -> bool{
+    for key in definition {
+        if key.syntax == Syntax::LeftHandSide {
+            // find the RHS with the name
+            for rhs in grammar {
+                if rhs.name == key.name {
+                    // call a function that goes through the Def
+                    if ll(grammar,&rhs.options,code,current,ast_node) {
+                        // if the code matches the Def then return true
+                        return true;
+                    } else {
+                        // if the code does not match the Def then return false
+                        return false;
+                    }
+                }
+            }
+        }
     }
+    false
 }
 fn first_do_the_thing(grammar:Vec<SxN>,code:String){   
     // starting with the first RHS in the grammar go through each option
     let current = 0;
-    for option in grammar[0].options {
-        let test = current.clone();
+    for option in &grammar[0].options {
+        let mut test = current.clone();
         if option.options.len() == 0{
             if Syntax::LeftHandSide == option.syntax {
                 // go into grammar and find the RHS with the name
-                for rhs in grammar {
+                for rhs in &grammar {
                     if rhs.name == option.name {
                         // call a function that will go through the RHS to see if there is a matching Def
                     }
@@ -82,10 +104,12 @@ struct ASTNode{
 // create a function that takes a grammar and some code and returns a AST
 fn grammar_to_AST(grammar:Vec<SxN>,code:String) -> AST{
     // create a AST
-    let AST = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
+    let AST_ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     // go through the grammar and create a AST
 
     // return the AST
+    let ast = AST{root:AST_};
+    ast
 }
 // create a function that takes a RHS and the current position in the code and checks if the code matches a Def in the RHS
 // create a function that goes through a Def and checks if the code matches staring at the current position in the code and if it does updates the AST and returns the new cursor position
@@ -126,6 +150,17 @@ fn main() {
             ]),
         ]}
     ];*/
+    let test_eval = vec![
+        RHS("Sum",     vec![Cho(vec![LHS("Add"),LHS("Subtract"),LHS("Product")])]),
+        RHS("Product", vec![Cho(vec![LHS("Multiply"),LHS("Divide"),LHS("Atomic")])]),
+        RHS("Atomic",  vec![Cho(vec![LHS("Number"),Def(vec![Key("("),LHS("Sum"),Key(")")])])]),
+        RHS("Add",     vec![Def(vec![LHS("Sum"),Key("+"),LHS("Product")])]),
+        RHS("Subtract",vec![Def(vec![LHS("Sum"),Key("-"),LHS("Product")])]),
+        RHS("Multiply",vec![Def(vec![LHS("Product"),Key("*"),LHS("Atomic")])]),
+        RHS("Divide",  vec![Def(vec![LHS("Product"),Key("/"),LHS("Atomic")])]),
+        RHS("Number",  vec![Opt(vec![Key("-")]),Arg(vec![LHS("Numeral")]),Opt(vec![Key("."),Arg(vec![LHS("Numeral")])]),]),
+        RHS("Numeral", vec![Opt(vec![Key("1"),Key("2"),Key("3"),Key("4"),Key("5"),Key("6"),Key("7"),Key("8"),Key("9"),Key("0"),])]),
+    ];
     let test_grammer = vec![
         RHS("PROGRAM",vec![Def(vec![LHS("NUMBERS")])]),
         RHS("NUMERAL_WO_0",vec![Def(vec![
