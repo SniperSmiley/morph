@@ -129,13 +129,67 @@ impl Parser{
         false
     }
     fn def_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
-        false
+        for key in &key.options {
+            match key.syntax {
+                Syntax::RightHandSide => {
+                    return false;
+                },
+                Syntax::LeftHandSide => {
+                    if !self.lhs_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Definition => {
+                    if !self.def_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Keyword => {
+                    if !self.key_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Repeat => {
+                    if !self.rep_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Argument => {
+                    if !self.arg_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Option => {
+                    if !self.opt_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Choice => {
+                    if !self.cho_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Group => {
+                    if !self.grp_check(&key,&ast_node){
+                        return false;
+                    }
+                },
+                
+            }
+        }
+        true
     }
     fn key_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
-        false
+        if self.code[self.current..].starts_with(&key.name){
+            self.current += key.name.len();
+            true
+        }else{
+            false
+        }
     }
     fn rep_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
-        false
+        while self.def_check(key, ast_node){}
+        true
     }
     fn arg_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
         false
@@ -145,7 +199,51 @@ impl Parser{
     }
     fn cho_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
         for key in &key.options {
-            return false;
+            match key.syntax {
+                Syntax::RightHandSide => {
+                    return false;
+                },
+                Syntax::LeftHandSide => {
+                    if self.lhs_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Definition => {
+                    if self.def_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Keyword => {
+                    if self.key_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Repeat => {
+                    if self.rep_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Argument => {
+                    if self.arg_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Option => {
+                    if self.opt_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Choice => {
+                    if self.cho_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Group => {
+                    if self.grp_check(&key,&ast_node){
+                        return true;
+                    }
+                },
+            }
         }
         false
     }
@@ -171,7 +269,7 @@ fn main() {
         rhs("Numeral", vec![cho(vec![key("1"),key("2"),key("3"),key("4"),key("5"),key("6"),key("7"),key("8"),key("9"),key("0"),])]),
     ];
     let test_grammer = vec![
-        rhs("PROGRAM",vec![def(vec![lhs("NUMBERS")])]),
+        rhs("PROGRAM",vec![def(vec![lhs("NUMBER")])]),
         rhs("NUMERAL_WO_0",vec![cho(vec![
             key("1"),
             key("2"),
@@ -203,4 +301,5 @@ fn main() {
         current:0,
     };
     parser.rhs_check(&parser.starting_point.clone(),&ast_node);
+    println!("{}",parser.current);
 }
