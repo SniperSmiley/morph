@@ -60,14 +60,21 @@ impl ASTNode{
         ASTNode{node_type,span,children}
     }
 }
+use std::collections::HashSet;
 struct Parser{
     grammar:Vec<SxN>,
     starting_point:SxN,
     code:String,
     ast:AST,
     current:usize,
+    visited:HashSet<String>,
 }
 impl Parser{
+    fn new(grammar:Vec<SxN>, starting_point:SxN, code:String) -> Parser{
+        let ast = AST{root:ASTNode::new("".to_string(),(0,0),vec![])};
+        let visited = HashSet::new();
+        Parser{grammar,starting_point,code,ast,current:0, visited}
+    }
     fn rhs_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
         for key in &key.options {
             match key.syntax {
@@ -123,7 +130,13 @@ impl Parser{
         for rhs in &self.grammar {
             if rhs.name == key.name {
                 // call a function that goes through the Def
-                return self.rhs_check(&rhs.clone(),&ast_node);
+                if self.visited.contains(&rhs.name) {
+                    // The RHS has already been visited, so skip it
+                    return false;
+                } else {
+                    self.visited.insert(rhs.name.clone());
+                    return self.rhs_check(&rhs.clone(),&ast_node);
+                }
             }
         }
         false
@@ -182,6 +195,7 @@ impl Parser{
     fn key_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
         if self.code[self.current..].starts_with(&key.name){
             self.current += key.name.len();
+            self.visited = HashSet::new();
             true
         }else{
             false
@@ -277,10 +291,11 @@ fn main() {
     let ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     let mut parser_equ = Parser{
         grammar: test_eval.clone(),
-        starting_point: test_eval[2].options[0].clone(),
+        starting_point: test_eval[0].options[0].clone(),
         code: test_equation.clone(),
         ast: AST{root:ast_equ.clone()},
         current:0,
+        visited: HashSet::new(),
     };
     parser_equ.rhs_check(&parser_equ.starting_point.clone(),&ast_equ);
     println!("{}",parser_equ.current);
@@ -316,6 +331,7 @@ fn main() {
         code: test_number,
         ast: AST{root:ast_node.clone()},
         current:0,
+        visited: HashSet::new(),
     };
     parser.rhs_check(&parser.starting_point.clone(),&ast_node);
     println!("{}",parser.current);
