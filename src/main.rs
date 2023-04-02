@@ -268,6 +268,18 @@ fn main() {
         rhs("Number",  vec![opt(vec![key("-")]),arg(vec![lhs("Numeral")]),opt(vec![key("."),arg(vec![lhs("Numeral")])]),]),
         rhs("Numeral", vec![cho(vec![key("1"),key("2"),key("3"),key("4"),key("5"),key("6"),key("7"),key("8"),key("9"),key("0"),])]),
     ];
+    let test_equation = "1+2*3+1/5-5/11".to_string();
+    let ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
+    let mut parser_equ = Parser{
+        grammar: test_eval.clone(),
+        starting_point: test_eval[2].options[0].clone(),
+        code: test_equation.clone(),
+        ast: AST{root:ast_equ.clone()},
+        current:0,
+    };
+    parser_equ.rhs_check(&parser_equ.starting_point.clone(),&ast_equ);
+    println!("{}",parser_equ.current);
+
     let test_grammer = vec![
         rhs("PROGRAM",vec![def(vec![lhs("NUMBER")])]),
         rhs("NUMERAL_WO_0",vec![cho(vec![
