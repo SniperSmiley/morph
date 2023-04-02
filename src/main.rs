@@ -192,10 +192,15 @@ impl Parser{
         true
     }
     fn arg_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+        if self.def_check(key, ast_node){
+            while self.def_check(key, ast_node){}
+            return true;
+        }
         false
     }
     fn opt_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
-        false
+        self.def_check(key, ast_node);
+        true
     }
     fn cho_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
         for key in &key.options {
@@ -265,10 +270,10 @@ fn main() {
         rhs("Subtract",vec![def(vec![lhs("Sum"),key("-"),lhs("Product")])]),
         rhs("Multiply",vec![def(vec![lhs("Product"),key("*"),lhs("Atomic")])]),
         rhs("Divide",  vec![def(vec![lhs("Product"),key("/"),lhs("Atomic")])]),
-        rhs("Number",  vec![opt(vec![key("-")]),arg(vec![lhs("Numeral")]),opt(vec![key("."),arg(vec![lhs("Numeral")])]),]),
+        rhs("Number",  vec![def(vec![opt(vec![key("-")]),arg(vec![lhs("Numeral")]),opt(vec![key("."),arg(vec![lhs("Numeral")])]),])]),
         rhs("Numeral", vec![cho(vec![key("1"),key("2"),key("3"),key("4"),key("5"),key("6"),key("7"),key("8"),key("9"),key("0"),])]),
     ];
-    let test_equation = "1+2*3+1/5-5/11".to_string();
+    let test_equation = "-1.5+2*3+1/5-5/11".to_string();
     let ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     let mut parser_equ = Parser{
         grammar: test_eval.clone(),
