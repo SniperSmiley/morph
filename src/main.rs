@@ -10,6 +10,7 @@ enum Syntax {
     Option,        // a Opt is a argument that is used once or not at all aka ? in regex
     Choice,        // a Cho is a vector of options where only one must be matched
     Group,         // a Grp is a vector of options that must matched but can be in any order
+    Capture,       // a Cap is a argument that is captured
 }
 #[derive(Clone)]
 struct SxN{
@@ -45,7 +46,11 @@ fn cho(options:Vec<SxN>) -> SxN{
 fn grp(options:Vec<SxN>) -> SxN{
     SxN{name:"".to_string(),syntax:Syntax::Group,options}
 }
+fn cap(name:&str,options:Vec<SxN>) -> SxN{
+    SxN{name:name.to_string(),syntax:Syntax::Capture,options}
+}
 // need a struct that holds the AST the grammer and the code
+#[derive(Clone)]
 struct AST{
     root: ASTNode,
 }
@@ -61,6 +66,7 @@ impl ASTNode{
     }
 }
 use std::collections::HashSet;
+#[derive(Clone)]
 struct Parser{
     grammar:Vec<SxN>,
     starting_point:SxN,
@@ -75,49 +81,54 @@ impl Parser{
         let visited = HashSet::new();
         Parser{grammar,starting_point,code,ast,current:0, visited}
     }
-    fn rhs_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn rhs_check(&mut self,key:&SxN,mut ast_node:&mut ASTNode) -> bool{
         for key in &key.options {
             match key.syntax {
                 Syntax::RightHandSide => {
                     return false;
                 },
                 Syntax::LeftHandSide => {
-                    if self.lhs_check(&key,&ast_node){
+                    if self.lhs_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Definition => {
-                    if self.def_check(&key,&ast_node){
+                    if self.def_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Keyword => {
-                    if self.key_check(&key,&ast_node){
+                    if self.key_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Repeat => {
-                    if self.rep_check(&key,&ast_node){
+                    if self.rep_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Argument => {
-                    if self.arg_check(&key,&ast_node){
+                    if self.arg_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Option => {
-                    if self.opt_check(&key,&ast_node){
+                    if self.opt_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Choice => {
-                    if self.cho_check(&key,&ast_node){
+                    if self.cho_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Group => {
-                    if self.grp_check(&key,&ast_node){
+                    if self.grp_check(&key,&mut ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Capture => {
+                    if self.cap_check(&key,&mut ast_node){
                         return true;
                     }
                 },
@@ -125,7 +136,7 @@ impl Parser{
         }
         false
     }
-    fn lhs_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn lhs_check(&mut self,key:&SxN,mut ast_node:&mut ASTNode) -> bool{
         // find the RHS with the name
         for rhs in &self.grammar {
             if rhs.name == key.name {
@@ -135,65 +146,74 @@ impl Parser{
                     return false;
                 } else {
                     self.visited.insert(rhs.name.clone());
-                    return self.rhs_check(&rhs.clone(),&ast_node);
+                    return self.rhs_check(&rhs.clone(),&mut ast_node);
                 }
             }
         }
         false
     }
-    fn def_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn def_check(&mut self,key:&SxN,mut ast_node:&mut ASTNode) -> bool{
+        let mut tester = self.clone();
         for key in &key.options {
             match key.syntax {
                 Syntax::RightHandSide => {
                     return false;
                 },
                 Syntax::LeftHandSide => {
-                    if !self.lhs_check(&key,&ast_node){
+                    if !tester.lhs_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Definition => {
-                    if !self.def_check(&key,&ast_node){
+                    if !tester.def_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Keyword => {
-                    if !self.key_check(&key,&ast_node){
+                    if !tester.key_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Repeat => {
-                    if !self.rep_check(&key,&ast_node){
+                    if !tester.rep_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Argument => {
-                    if !self.arg_check(&key,&ast_node){
+                    if !tester.arg_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Option => {
-                    if !self.opt_check(&key,&ast_node){
+                    if !tester.opt_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Choice => {
-                    if !self.cho_check(&key,&ast_node){
+                    if !tester.cho_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 Syntax::Group => {
-                    if !self.grp_check(&key,&ast_node){
+                    if !tester.grp_check(&key,&mut ast_node){
+                        return false;
+                    }
+                },
+                Syntax::Capture => {
+                    if !tester.cap_check(&key,&mut ast_node){
                         return false;
                     }
                 },
                 
             }
         }
+        *self = tester;
         true
     }
-    fn key_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn key_check(&mut self,key:&SxN,ast_node:&mut ASTNode) -> bool{
         if self.code[self.current..].starts_with(&key.name){
+            ast_node.span = (self.current,self.current+key.name.len());
+            ast_node.node_type = key.name.clone();
             self.current += key.name.len();
             self.visited = HashSet::new();
             true
@@ -201,64 +221,69 @@ impl Parser{
             false
         }
     }
-    fn rep_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn rep_check(&mut self,key:&SxN,ast_node:&mut ASTNode) -> bool{
         while self.def_check(key, ast_node){}
         true
     }
-    fn arg_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn arg_check(&mut self,key:&SxN,ast_node:&mut ASTNode) -> bool{
         if self.def_check(key, ast_node){
             while self.def_check(key, ast_node){}
             return true;
         }
         false
     }
-    fn opt_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn opt_check(&mut self,key:&SxN,ast_node:&mut ASTNode) -> bool{
         self.def_check(key, ast_node);
         true
     }
-    fn cho_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn cho_check(&mut self,key:&SxN,mut ast_node:&mut ASTNode) -> bool{
         for key in &key.options {
             match key.syntax {
                 Syntax::RightHandSide => {
                     return false;
                 },
                 Syntax::LeftHandSide => {
-                    if self.lhs_check(&key,&ast_node){
+                    if self.lhs_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Definition => {
-                    if self.def_check(&key,&ast_node){
+                    if self.def_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Keyword => {
-                    if self.key_check(&key,&ast_node){
+                    if self.key_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Repeat => {
-                    if self.rep_check(&key,&ast_node){
+                    if self.rep_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Argument => {
-                    if self.arg_check(&key,&ast_node){
+                    if self.arg_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Option => {
-                    if self.opt_check(&key,&ast_node){
+                    if self.opt_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Choice => {
-                    if self.cho_check(&key,&ast_node){
+                    if self.cho_check(&key,&mut ast_node){
                         return true;
                     }
                 },
                 Syntax::Group => {
-                    if self.grp_check(&key,&ast_node){
+                    if self.grp_check(&key,&mut ast_node){
+                        return true;
+                    }
+                },
+                Syntax::Capture => {
+                    if self.cap_check(&key,&mut ast_node){
                         return true;
                     }
                 },
@@ -266,7 +291,15 @@ impl Parser{
         }
         false
     }
-    fn grp_check(&mut self,key:&SxN,ast_node:&ASTNode) -> bool{
+    fn grp_check(&mut self,key:&SxN,ast_node:&mut ASTNode) -> bool{
+        false
+    }
+    fn cap_check(&mut self,key:&SxN,mut ast_node:&mut ASTNode) -> bool{
+        let temp = self.current;
+        if self.def_check(key,&mut ast_node){
+            ast_node.span = (temp,self.current);
+            return true;
+        }
         false
     }
 }
@@ -288,7 +321,7 @@ fn main() {
         rhs("Numeral", vec![cho(vec![key("1"),key("2"),key("3"),key("4"),key("5"),key("6"),key("7"),key("8"),key("9"),key("0"),])]),
     ];
     let test_equation = "-1.5+2*3+1/5-5/11".to_string();
-    let ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
+    let mut ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     let mut parser_equ = Parser{
         grammar: test_eval.clone(),
         starting_point: test_eval[0].options[0].clone(),
@@ -297,7 +330,7 @@ fn main() {
         current:0,
         visited: HashSet::new(),
     };
-    parser_equ.rhs_check(&parser_equ.starting_point.clone(),&ast_equ);
+    parser_equ.rhs_check(&parser_equ.starting_point.clone(),&mut ast_equ);
     println!("{}",parser_equ.current);
 
     let test_grammer = vec![
@@ -324,7 +357,7 @@ fn main() {
     ];
 
     let test_number = "1234567890".to_string();
-    let ast_node = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
+    let mut ast_node = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     let mut parser = Parser{
         grammar: test_grammer.clone(),
         starting_point: test_grammer[0].options[0].clone(),
@@ -333,6 +366,6 @@ fn main() {
         current:0,
         visited: HashSet::new(),
     };
-    parser.rhs_check(&parser.starting_point.clone(),&ast_node);
+    parser.rhs_check(&parser.starting_point.clone(),&mut ast_node);
     println!("{}",parser.current);
 }
