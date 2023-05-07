@@ -74,12 +74,13 @@ struct Parser{
     ast:AST,
     current:usize,
     visited:HashSet<String>,
+    indent:usize,
 }
 impl Parser{
     fn new(grammar:Vec<SxN>, starting_point:SxN, code:String) -> Parser{
         let ast = AST{root:ASTNode::new("".to_string(),(0,0),vec![])};
         let visited = HashSet::new();
-        Parser{grammar,starting_point,code,ast,current:0, visited}
+        Parser{grammar,starting_point,code,ast,current:0, visited, indent:0}
     }
     fn parse(&mut self){
         while self.current != self.code.len(){
@@ -92,7 +93,8 @@ impl Parser{
         }
     }
     fn rhs_check(&mut self, in_key: &SxN) -> Option<ASTNode> {
-        println!("rhs_check({})", in_key.name);
+        println!("{}rhs_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), in_key.name);
+        self.indent+=1;
         let mut rhs_node = ASTNode::new(in_key.name.clone(),(self.current,self.current),vec![]);
         for key in &in_key.options {
             match key.syntax {
@@ -144,6 +146,7 @@ impl Parser{
                 },
             }
         }
+        self.indent-=1;
         if rhs_node.children.len() == 0 {
             None
         } else {
@@ -153,25 +156,31 @@ impl Parser{
     }
     
     fn lhs_check(&mut self, key: &SxN) -> Option<ASTNode> {
-        println!("lhs_check({})", key.name);
+        println!("{}lhs_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        self.indent+=1;
         // find the RHS with the name
         for rhs in &self.grammar {
             if rhs.name == key.name {
                 // call a function that goes through the Def
                 if self.visited.contains(&rhs.name) {
                     // The RHS has already been visited, so skip it
+                    self.indent-=1;
                     return None;
                 } else {
                     self.visited.insert(rhs.name.clone());
-                    return self.rhs_check(&rhs.clone());
+                    let tel = self.rhs_check(&rhs.clone());
+                    self.indent-=1;
+                    return tel;
                 }
             }
         }
+        self.indent-=1;
         None
     }
     
     fn def_check(&mut self, in_key: &SxN) -> Option<ASTNode> {
-        println!("def_check({})", in_key.name);
+        println!("{}def_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), in_key.name);
+        self.indent+=1;
         let start = self.current;
         let mut tester = self.clone();
         let mut def_node = ASTNode::new(in_key.name.clone(),(0,0),vec![]);
@@ -182,6 +191,7 @@ impl Parser{
                     if let Some(ast_node) = tester.lhs_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -189,6 +199,7 @@ impl Parser{
                     if let Some(ast_node) = tester.def_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -196,6 +207,7 @@ impl Parser{
                     if let Some(ast_node) = tester.key_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -203,6 +215,7 @@ impl Parser{
                     if let Some(ast_node) = tester.rep_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -210,6 +223,7 @@ impl Parser{
                     if let Some(ast_node) = tester.arg_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -222,6 +236,7 @@ impl Parser{
                     if let Some(ast_node) = tester.cho_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -229,6 +244,7 @@ impl Parser{
                     if let Some(ast_node) = tester.grp_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -236,6 +252,7 @@ impl Parser{
                     if let Some(ast_node) = tester.cap_check(&key) {
                         def_node.children.push(ast_node);
                     } else {
+                        self.indent-=1;
                         return None;
                     }
                 },
@@ -244,11 +261,12 @@ impl Parser{
         }
         *self = tester;
         def_node.span = (start, self.current);
+        self.indent-=1;
         Some(def_node)
     }
     fn key_check(&mut self,key:&SxN) -> Option<ASTNode>{
-        println!("key_check({})", key.name);
-        println!("          {} ", self.code[self.current..self.current+key.name.len()].to_string());
+        println!("{}key_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        //println!("          {} ", self.code[self.current..self.current+key.name.len()].to_string());
         if self.code[self.current..].starts_with(&key.name){
             let ast_node = ASTNode::new(key.name.clone(),(self.current,self.current+key.name.len()),vec![]);
             self.current += key.name.len();
@@ -259,7 +277,8 @@ impl Parser{
         }
     }
     fn rep_check(&mut self, key: &SxN) -> Option<ASTNode> {
-        println!("rep_check({})", key.name);
+        println!("{}rep_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        self.indent+=1;
         let start = self.current;
         if let Some(def_ast_node) = self.def_check(key) {
             let mut ast_node = ASTNode::new(key.name.clone(), (0, 0), vec![def_ast_node.clone()]);
@@ -267,14 +286,17 @@ impl Parser{
                 ast_node.children.push(ast_node2.clone());
             }
             ast_node.span = (start, self.current);
+            self.indent-=1;
             Some(ast_node)
         } else {
+            self.indent-=1;
             None
         }
     }
     
     fn arg_check(&mut self,key:&SxN) -> Option<ASTNode>{
-        println!("arg_check({})", key.name);
+        println!("{}arg_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        self.indent+=1;
         let start = self.current;
         match self.def_check(key){
             Some(def_ast_node) => {
@@ -298,63 +320,78 @@ impl Parser{
         }
     }
     fn opt_check(&mut self,key:&SxN) -> Option<ASTNode>{
-        println!("opt_check({})", key.name);
-        return self.def_check(key);
+        println!("{}opt_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        self.indent+=1;
+        let tel = self.def_check(key);
+        self.indent-=1;
+        return tel;
     }
     fn cho_check(&mut self,key:&SxN) -> Option<ASTNode>{
-        println!("cho_check({})", key.name);
+        println!("{}cho_check({})", (0..self.indent).map(|_|"  ").collect::<String>(), key.name);
+        self.indent+=1;
         for key in &key.options {
             match key.syntax {
                 Syntax::RightHandSide => {
+                    self.indent-=1;
                     return None;
                 },
                 Syntax::LeftHandSide => {
                     if let Some(node) = self.lhs_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Definition => {
                     if let Some(node) = self.def_check(&key){
+                        self.indent-=1;
                         return Some(node)
                     }
                 },
                 Syntax::Keyword => {
                     if let Some(node) = self.key_check(&key){
+                        self.indent-=1;
                         return Some(node)
                     }
                 },
                 Syntax::Repeat => {
                     if let Some(node) = self.rep_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Argument => {
                     if let Some(node) = self.arg_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Option => {
                     if let Some(node) = self.opt_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Choice => {
                     if let Some(node) = self.cho_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Group => {
                     if let Some(node) = self.grp_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
                 Syntax::Capture => {
                     if let Some(node) = self.cap_check(&key){
+                        self.indent-=1;
                         return Some(node);
                     }
                 },
             }
         }
+        self.indent-=1;
         None
     }
     fn grp_check(&mut self,key:&SxN) -> Option<ASTNode>{
@@ -378,28 +415,25 @@ fn main() {
     let code = collection::read_file("src\\example.mph");
     // create a syntax
     let test_eval = vec![
+        rhs("Val",     vec![def(vec![key("val "),lhs("Name"),rep(vec![key(" ")]),key("="),rep(vec![key(" ")]),lhs("Number"),key(";")])]),
         rhs("Eval",    vec![def(vec![rep(vec![lhs("Sum")])])]),
-        rhs("Sum",     vec![cho(vec![lhs("Add"),lhs("Subtract"),lhs("Product")])]),
-        rhs("Product", vec![cho(vec![lhs("Multiply"),lhs("Divide"),lhs("Atomic")])]),
-        rhs("Atomic",  vec![cho(vec![lhs("Number"),def(vec![key("("),lhs("Sum"),key(")")])])]),
-        rhs("Add",     vec![def(vec![lhs("product"),key("+"),lhs("sum")])]),
-        rhs("Subtract",vec![def(vec![lhs("Sum"),key("-"),lhs("Product")])]),
-        rhs("Multiply",vec![def(vec![lhs("Atomic"),key("*"),lhs("Product")])]),
-        rhs("Divide",  vec![def(vec![lhs("Product"),key("/"),lhs("Atomic")])]),
+        rhs("Name",    vec![def(vec![lhs("Letter"),rep(vec![cho(vec![lhs("Letter"),key("_")])])])]),
+        rhs("Letter",  vec![cho(vec![key("a"),key("b"),key("c"),key("d"),key("e"),key("f"),key("g"),key("h"),key("i"),key("j"),key("k"),key("l"),key("m"),key("n"),key("o"),key("p"),key("q"),key("r"),key("s"),key("t"),key("u"),key("v"),key("w"),key("x"),key("y"),key("z")])]),
         rhs("Number",  vec![def(vec![opt(vec![key("-")]),arg(vec![lhs("Numeral")]),opt(vec![key("."),arg(vec![lhs("Numeral")])]),])]),
         rhs("Numeral", vec![cho(vec![key("1"),key("2"),key("3"),key("4"),key("5"),key("6"),key("7"),key("8"),key("9"),key("0"),])]),
     ];
-    let test_equation = "-1.5+2*3+1/5-5/11".to_string();
+    let test_equation = "val west = 3;".to_string();
     let mut ast_equ = ASTNode{node_type:"".to_string(),span:(0,0),children:vec![]};
     let mut parser_equ = Parser{
         grammar: test_eval.clone(),
-        starting_point: test_eval[4].clone(),
+        starting_point: test_eval[0].clone(),
         code: test_equation.clone(),
         ast: AST{root:ast_equ.clone()},
         current:0,
         visited: HashSet::new(),
+        indent:0,
     };
-    //parser_equ.rhs_check(&test_eval[0].clone());
+    parser_equ.rhs_check(&test_eval[0].clone());
     parser_equ.parse();
     println!("{}",parser_equ.current);
 
@@ -435,6 +469,7 @@ fn main() {
         ast: AST{root:ast_node.clone()},
         current:0,
         visited: HashSet::new(),
+        indent:0,
     };
     //parser.rhs_check(&parser.starting_point.clone());
     //println!("{}",parser.current);
