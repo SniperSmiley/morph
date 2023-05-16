@@ -314,9 +314,13 @@ impl Parser{
                         },
                     }
                 }
+                self.indent-=1;
                 return Some(ast_node);
             },
-            None => return None,
+            None => {
+                self.indent-=1;
+                return None
+            }
         }
     }
     fn opt_check(&mut self,key:&SxN) -> Option<ASTNode>{
